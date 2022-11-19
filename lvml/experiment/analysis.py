@@ -3,6 +3,7 @@ import functools
 import io
 
 import numpy as np
+import scipy.stats
 import matplotlib.pyplot as plt
 
 from IPython.display import HTML,display
@@ -14,6 +15,9 @@ __all__=[
     'opt_eq_f',
     'quantize',
     'create_fig',
+    'confidence_interval',
+    'series_confidence_interval',
+    'plot_line_with_ci',
 ]
 
 # Convenience functions for LV equilibrium analysis
@@ -65,3 +69,29 @@ def create_fig(*args, **kwargs):
     fig.download = lambda filename: download_fig(fig, filename)
     return fig,ax
 
+# Statistical analysis
+
+confidence_interval = lambda mu, std, count: scipy.stats.norm.interval(
+    0.95,
+    loc=mu,
+    scale=std/np.sqrt(count),
+)
+
+series_confidence_interval = lambda s: confidence_interval(s.mean(), s.std(), s.count())
+
+def plot_line_with_ci(df, ax, label=None, color=None, linestyle=None):
+    assert len({'mean','ci'} - set(df.columns))==0
+    df['mean'].plot.line(
+        ax=ax,
+        label=label,
+        color=color,
+        linestyle=linestyle,
+    ),
+    ax.fill_between(
+        df.index,
+        df['ci'].map(lambda t: t[0]),
+        df['ci'].map(lambda t: t[1]),
+        alpha=0.2,
+        color=color,
+    )
+    return ax
